@@ -26,8 +26,7 @@ const SMOOTHING = 0.8;
 const FFT_SIZE = 2048;
 
 function StreamVisualizer(remoteStream, canvas, params) {
-  console.log('Creating StreamVisualizer with remoteStream and canvas: ',
-    remoteStream, canvas);
+  //console.log('Creating StreamVisualizer with remoteStream and canvas: ', remoteStream, canvas);
   this.canvas = canvas;
   this.drawContext = this.canvas.getContext('2d');
 
@@ -42,7 +41,7 @@ function StreamVisualizer(remoteStream, canvas, params) {
 
   // Create a MediaStreamAudioSourceNode from the remoteStream
   this.source = this.context.createMediaStreamSource(remoteStream);
-  console.log('Created Web Audio source from remote stream: ', this.source);
+  //console.log('Created Web Audio source from remote stream: ', this.source);
 
   this.analyser = this.context.createAnalyser();
 //  this.analyser.connect(this.context.destination);
@@ -121,4 +120,4 @@ StreamVisualizer.prototype.getFrequencyValue = function(freq) {
   return this.freqs[index];
 };
 
-export default StreamVisualizer;
+module.exports = StreamVisualizer;

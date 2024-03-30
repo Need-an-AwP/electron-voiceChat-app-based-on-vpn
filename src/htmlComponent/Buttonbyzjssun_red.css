@@ -1,0 +1,30 @@
+.zjssun-btn-red {
+    padding: 10px 20px;
+    text-transform: uppercase;
+    border-radius: 8px;
+    font-size: 17px;
+    font-weight: 500;
+    color: #ffffff80;
+    text-shadow: none;
+    background: transparent;
+    cursor: pointer;
+    box-shadow: transparent;
+    border: 1px solid #ffffff80;
+    transition: 0.5s ease;
+    user-select: none;
+}
+
+.zjssun-btn-red:hover:not(:disabled),
+.zjssun-btn-red:focus:not(:disabled) {
+    color: #ffffff;
+    background: #ff0000;
+    border: 1px solid #ff0000;
+    text-shadow: 0 0 5px #ffffff, 0 0 10px #ffffff, 0 0 20px #ffffff;
+    box-shadow: 0 0 5px #ff0000, 0 0 20px #ff0000, 0 0 50px #ff0000,
+        0 0 100px #ff0000;
+}
+
+.zjssun-btn-red:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}

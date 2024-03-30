@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Security-Policy" content="
+    script-src 'self' 'unsafe-inline' https://static2.sharepointonline.com; 
+    style-src 'self' 'unsafe-inline' https://static2.sharepointonline.com; 
+    img-src 'self' data:;
+    ">
+
+    <title>webRTC Electron App</title>
+    <script src="../js/noiseReduction.js""></script>
+    <script src=" ../js/noise.js"></script>
+    <!--
+    <script src="js/socket.io.min.4.7.4.js"></script>
+    <script src="js/adapter-latest.js"></script>-->
+    <link rel="stylesheet" type="text/css" href="htmlComponent/Buttonbyzjssun.css">
+    <link rel="stylesheet" type="text/css" href="htmlComponent/Buttonbyzjssun_red.css">
+    <link rel="stylesheet" type="text/css" href="htmlComponent/noiseReduceSwitch.css">
+</head>
+
+<body style="background-color: rgb(36, 36, 36); color: #fff;width: 100vw; height: 100vh;margin: 0;">
+    <div style="width: 100vw; height: 100vh; gap: 15px;">
+        <div>
+            <span id="ts_state"></span>
+            <div id="signaling_div"></div>
+            <button id="confirm_button" class="zjssun-btn">JOIN VOICE CHAT</button>
+            <button id="leave_button" class="zjssun-btn-red">LEAVE CHAT</button>
+        </div>
+
+        <div>
+            <label for="audioInput">Select Audio Input:</label>
+            <select id="audioInput"></select>
+            <br>
+            <label for="audioOutput">Select Audio Output:</label>
+            <select id="audioOutput"></select>
+        </div>
+
+        <p id="members"></p>
+        <div id="pcs"></div>
+
+        <div id="localAudio" style="border: #fff;">
+            local audio
+            <div class="cl-toggle-switch">
+                <label class="cl-switch">
+                    <input type="checkbox" id="noiseReduceSwitch">
+                    <span>noise reduction switch</span>
+                </label>
+            </div>
+
+            <audio class="localpcsOutputAudio" id="localStream" controls></audio>
+            <canvas id="visualizeCanvas"></canvas>
+        </div>
+        <div style="display: flex;flex-direction: row;">
+            <div style="width: 50%;text-align: left;">
+                <button id="appAudioInputButton" class="zjssun-btn">choose app audio input</button>
+                <div id="audioCapture"></div>
+            </div>
+            <div style="width: 50%;text-align: right;">
+                <button id="screenShareButton" class="zjssun-btn">choose screen share source</button>
+                <div id="desktopCapture"></div>
+            </div>
+        </div>
+        <div id="audio_elements" style="border: #fff; border-style:none;">
+            remote audios
+
+        </div>
+    </div>
+
+</body>
+
+</html>
+<!--
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Security-Policy" content="
+        script-src 'self' 'unsafe-inline' https://static2.sharepointonline.com; 
+        style-src 'self' 'unsafe-inline' https://static2.sharepointonline.com; 
+        img-src 'self' data:;
+        ">
+    <title>webRTC Electron App</title>
+    
+    <link rel="stylesheet"
+        href="https://static2.sharepointonline.com/files/fabric/office-ui-fabric-js/1.4.0/css/fabric.min.css" />
+    <link rel="stylesheet"
+        href="https://static2.sharepointonline.com/files/fabric/office-ui-fabric-js/1.4.0/css/fabric.components.min.css" />
+    <script src="https://static2.sharepointonline.com/files/fabric/office-ui-fabric-js/1.4.0/js/fabric.min.js"></script>
+
+</head>
+
+<body style="background-color: rgb(48, 48, 48); color: #fff;">
+    <div style="width: 100vw; height: 100vh; ">
+        <div>
+            <button class="ms-Button">a button</button>
+        </div>
+        <div class="ms-Grid" dir="ltr">
+            <div class="ms-Grid-row">
+                <div class="ms-Grid-col ms-sm6">
+                    <label for="nw_select">Select a network to join:</label>
+                    <select id="nw_select" class="ms-Dropdown"></select>
+                </div>
+                <div class="ms-Grid-col ms-sm6">
+                    <button id="confirm_button" class="ms-Button">scan chosen network (equals join the room)</button>
+                </div>
+            </div>
+
+            <div class="ms-Grid-row">
+                <div class="ms-Grid-col">
+                    <p>The signal server is <strong id="signaling_server_info"></strong></p>
+                    <p id="info"></p>
+                </div>
+            </div>
+
+            <div class="ms-Grid-row">
+                <div class="ms-Grid-col">
+                    <button id="join_button" class="ms-Button">JOIN VOICE CHAT</button>
+                </div>
+            </div>
+
+            <div class="ms-Grid-row">
+                <div class="ms-Grid-col">
+                    <label for="audioInput">Select Audio Input:</label>
+                    <select id="audioInput" class="ms-Dropdown"></select>
+                    <button id="callButton" class="ms-Button">call</button>
+                    <button id="hangupButton" class="ms-Button">hangup</button>
+                </div>
+            </div>
+
+            <div class="ms-Grid-row">
+                <div class="ms-Grid-col">
+                    <p id="members"></p>
+                    <ul id="localpcsINFO"></ul>
+                </div>
+            </div>
+
+            <div class="ms-Grid-row">
+                <div class="ms-Grid-col">
+                    <span>local</span>
+                    <audio id="localAudio" controls></audio>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+
+</html>
+-->
