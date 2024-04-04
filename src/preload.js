@@ -21,14 +21,19 @@ let ts_localIp = ''
 let ts_peersIp = []
 
 const pendingIceCandidates = {}; //ice candidate buffer
-let room_members = []
+let room_members = {}
 let localpcs = {}
 let remotepcs = {}
 let dc_ping = {}
 let dc_renegotiation = {}
 let dc_receive = {}
 let target_server = ''
+let socket_io = {}
 let signaling_connections = {}
+let availableSignalingConnection = {}
+let inRoom_state = false
+let pcChecking
+
 let connected_ts_peersIp = []
 let signaling_statue = false
 let ping_startTime
@@ -238,60 +243,140 @@ window.addEventListener('DOMContentLoaded', () => {
     leave_button.disabled = true
 
     ipcRenderer.on('nw_info', (e, d) => {
-        const peersContent = ts_peersIp.length > 0 ? ts_peersIp.join('<br>') : 'no one else online'
         const ts_state = document.getElementById('ts_state')
-        ts_state.innerHTML = `Tailscale local IP: ${d.ts_localIp}<br>Tailnet peers: ${peersContent}<br>`
-
+        if (ts_peersIp === 'tailscale not available') {
+            const peersContent = 'tailscale not available'
+            ts_state.innerHTML = `Tailscale local IP: ${d.ts_localIp}<br>Tailnet peers: ${peersContent}<br>`
+        } else {
+            const peersContent = ts_peersIp.length > 0 ? (ts_peersIp.length > 1 ? ts_peersIp.join(', ') : ts_peersIp[0]) : 'no one else online'
+            ts_state.innerHTML = `Tailscale local IP: ${d.ts_localIp}<br>Tailnet peers: ${peersContent}<br>`
+        }
         ts_localIp = d.ts_localIp
         ts_peersIp = d.ts_peersIp
-        //console.log(ts_localIp)
     })
 
+    //automatically connect all signaling server
     setInterval(() => {
         if (ts_peersIp.length !== 0 && typeof (ts_peersIp) !== 'string') {
-            const unconnected_ts_peersIp = ts_peersIp.filter(ip => !Object.keys(signaling_connections).includes(ip))
-            for (let ip of unconnected_ts_peersIp) {
-                const peerConnection = io(`http://${ip}:8848`)
-                peerConnection.on('connect', () => {
-                    console.log(`local socket id: ${peerConnection.id}`)
-                    const signaling_div = document.getElementById('signaling_div')
-                    const info = document.createElement('span')
-                    info.id = ip
-                    signaling_div.appendChild(info)
-                    confirm_button.disabled = false
-                    setInterval(() => {
-                        peerConnection.emit('ping', { localId: peerConnection.id })
-                        ping_startTime = Date.now()
-                    }, 1000);
+            for (let ip of ts_peersIp) {
+                if (!socket_io[ip]) {
+                    const socketConnection = io(`http://${ip}:8848`)
+                    socket_io[ip] = socketConnection
+                    //console.log(`created a new socketio object for ${ip}`)
 
-                })
-                peerConnection.on('disconnect', () => {
-                    const info = document.getElementById(ip)
-                    info.innerHTML = `${ip} disconnected`
-                })
-                peerConnection.on('pong', () => {
-                    ping_endTime = Date.now()
-                    const latency = ping_endTime - ping_startTime
-                    const info = document.getElementById(ip)
-                    info.innerHTML = `connected to ${ip}'s signaling server with ${latency} ms`
-                })
-                peerConnection.on('answer', async (d) => {
-                    if (localpcs[ip]) {
-                        await localpcs[ip].setRemoteDescription(d.data)
-                        console.log('answer received & remote description setted')
-                    }
-                })
-
-                signaling_connections[ip] = { signaling: peerConnection, ip: ip }
-
+                    socketConnection.on('connect', () => {
+                        console.log(`local socket id: ${socketConnection.id}`)
+                        const signaling_div = document.getElementById('signaling_div')
+                        const info = document.createElement('span')
+                        info.id = ip
+                        signaling_div.appendChild(info)
+                        confirm_button.disabled = false
+                        setInterval(() => {
+                            socketConnection.emit('ping', { localId: socketConnection.id })
+                            ping_startTime = Date.now()
+                        }, 1000);
+                        signaling_connections[ip] = { signaling: socketConnection, ip: ip }
+                        availableSignalingConnection[ip] = socketConnection
+                    })
+                    socketConnection.on('disconnect', () => {
+                        const info = document.getElementById(ip)
+                        info.innerHTML = ''
+                        delete signaling_connections[ip]
+                        delete availableSignalingConnection[ip]
+                        delete socket_io[ip]
+                    })
+                    socketConnection.on('pong', () => {
+                        ping_endTime = Date.now()
+                        const latency = ping_endTime - ping_startTime
+                        const info = document.getElementById(ip)
+                        info.innerHTML = `connected to ${ip}'s signaling server with ${latency} ms` + '<br>'
+                    })
+                    socketConnection.on('answer', async (d) => {
+                        if (localpcs[ip]) {
+                            await localpcs[ip].setRemoteDescription(d.data)
+                            console.log('answer received & remote description setted')
+                        }
+                    })
+                }
             }
         }
     }, 1000);
+    setInterval(() => {
+        if (Object.keys(socket_io).length !== 0) {
+            for (let ip of Object.keys(socket_io)) {
+                const io = socket_io[ip]
+                if (!io.connected) {
+                    io.removeAllListeners()
+                    io.close()
+                    delete socket_io[ip]
+                }
+            }
+        }
+    }, 1500);
 
 
     confirm_button.addEventListener('click', () => {
-        confirm_button.disabled = true
-        leave_button.disabled = false
+        //confirm_button.disabled = true
+        //leave_button.disabled = false
+
+        //join status
+        const room_members_ul = document.getElementById('room_members')
+        const li = document.createElement('li')
+        li.textContent = ts_localIp + '(local)'
+        room_members_ul.appendChild(li)
+        room_members[ts_localIp] = { ip: ts_localIp, state: 'join' }
+        //check localpcs
+        pcChecking = setInterval(() => {
+            confirm_button.disabled = true
+            leave_button.disabled = false
+            for (let ip of Object.keys(availableSignalingConnection)) {
+                const signaling = availableSignalingConnection[ip]
+                signaling.emit('join', { localIp: ts_localIp, state: 'joined' })
+                if (!localpcs[ip] && Object.keys(room_members).includes(ip) || localpcs[ip].connectionState === 'failed') {
+                    const pc = new RTCPeerConnection()
+                    localStream.getTracks().forEach(track => pc.addTrack(track, localStream))
+                    pc.createOffer()
+                        .then(offer => {
+                            pc.setLocalDescription(offer)
+                            pc.onicecandidate = e => {
+                                if (e.candidate) {
+                                    console.log('ice sent')
+                                    signaling.emit('icecandidate', { offerIp: ts_localIp, localId: signaling.id, data: e.candidate })
+                                }
+                            }
+                            pc.oniceconnectionstatechange = e => { }
+                            signaling.emit('offer', { offerIp: ts_localIp, scoketId: signaling.id, data: offer })
+                        })
+                        .then(() => {
+                            const tempdiv = document.createElement('div')
+                            tempdiv.id = `div_${ip}`
+                            const visualizeCanvas = document.createElement('canvas')
+                            const audio = document.createElement('audio')
+                            audio.id = `audio_${ip}`
+                            audio.className = 'localpcsOutputAudio'
+                            audio.autoplay = true
+                            audio.controls = true
+                            audio.volume = 0
+                            pc.ontrack = e => {
+                                audio.srcObject = e.streams[0]
+                                const visualizer = new AudioVisualizer(e.streams[0], visualizeCanvas, 128);
+                                visualizer.start()
+                            }
+
+                            const span = document.createElement('span')
+                            span.innerHTML = `audio from localpc ${ip}`
+                            tempdiv.appendChild(span)
+                            tempdiv.appendChild(audio)
+                            tempdiv.appendChild(visualizeCanvas)
+                            document.getElementById('audio_elements').appendChild(tempdiv)
+                            localpcs[ip] = pc
+                        })
+                        .catch(error => { console.log(error) })
+                }
+            }
+        }, 200);
+
+        /*
         for (let item of Object.values(signaling_connections)) {
             const signaling = item.signaling
             const ip = item.ip
@@ -313,6 +398,7 @@ window.addEventListener('DOMContentLoaded', () => {
                     const tempdiv = document.createElement('div')
                     const visualizeCanvas = document.createElement('canvas')
                     const audio = document.createElement('audio')
+                    audio.id = `audio_${ip}`
                     audio.className = 'localpcsOutputAudio'
                     audio.autoplay = true
                     audio.controls = true
@@ -330,15 +416,40 @@ window.addEventListener('DOMContentLoaded', () => {
                     tempdiv.appendChild(span)
                     document.getElementById('audio_elements').appendChild(tempdiv)
 
+                    //positively reconnect rtc connnection when detected disconnect
+                    pc.onconnectionstatechange = e => {
+                        console.log(`peerconnection to ${ip} state changed to: ${pc.connectionState}`);
+                        
+                        if (pc.connectionState === 'disconnected') {
+                            const reconnectRTC = setInterval(() => {
+                                pc.createOffer({ iceRestart: true })
+                                    .then(offer => {
+                                        signaling.emit('offer', { offerIp: ts_localIp, scoketId: signaling.id, data: offer })
+                                    })
+                                    .then(() => {
+                                        const audio = document.getElementById(`audio_${ip}`)
+                                        pc.ontrack = e => {
+                                            audio.srcObject = e.streams[0]
+                                            const visualizer = new AudioVisualizer(e.streams[0], visualizeCanvas, 128);
+                                            visualizer.start()
+                                        }
+                                    })
+                            }, 500);
+                        }
+
+                    }
+
                     localpcs[ip] = pc
                 })
                 .catch(error => { console.log(error) })
-
-
-        }
+        }*/
     })
 
     leave_button.addEventListener('click', () => {
+        if (pcChecking) {
+            clearInterval(pcChecking)
+        }
+        delete room_members[ts_localIp]
         for (const pc of Object.values(localpcs)) {
             pc.close();
         }
@@ -353,7 +464,33 @@ window.addEventListener('DOMContentLoaded', () => {
         leave_button.disabled = true;
         const pcs_div = document.getElementById('pcs');
         pcs_div.innerHTML = '';
+        const audio_elements = document.getElementById('audio_elements')
+        audio_elements.innerHTML = 'remote audios';
     })
+
+
+    const room_members_ul = document.getElementById('room_members')
+    ipcRenderer.on('join', (e, d) => {
+        room_members[d.localIp] = { ip: d.localIp, t: Date.now(), state: d.state }
+    })
+    setInterval(() => {
+        room_members_ul.innerHTML = ''
+        for (let ip of Object.keys(room_members)) {
+            const item = room_members[ip]
+            if (item.t) {
+                const time = item.t
+                if (Date.now() - time > 1500) {
+                    delete room_members[ip]
+                    const tempdiv = document.getElementById(`div_${ip}`)
+                    tempdiv.innerHTML = ''
+                }
+            }
+            const li = document.createElement('li')
+            li.textContent = ip === ts_localIp ? ip + '(local)' : ip
+            room_members_ul.appendChild(li)
+
+        }
+    }, 200);
 
     ipcRenderer.on('offer', async (e, d) => {
         //console.log(d.data)

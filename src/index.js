@@ -16,6 +16,8 @@ let globalData = {
 }
 
 //------------server
+let room_members = new Set()
+let isServerRunning = false
 const serverapp = express()
 serverapp.get('/signal-server', (req, res) => {
     res.json({
@@ -52,11 +54,12 @@ socketServer.on('connection', (socket) => {
         const id = msg.localId
         socketServer.to(id).emit('pong')
     })
-})
 
-server.listen(8848, '0.0.0.0', () => {
-    console.log('(server online)')
-    isServerRunning = true
+    socket.on('join', (msg) => {
+        //room_members.add(d.localIp)
+        win.webContents.send('join', msg)
+
+    })
 })
 
 
@@ -113,6 +116,9 @@ const collectTsMembers = async () => {
         let peersIp = []
         result = await executeCommand('tailscale status --json')
         const tsStatus = JSON.parse(result)
+
+        if (tsStatus.Health !== null) { console.log(tsStatus.Health) }
+
         if (tsStatus.BackendState === 'NeedsLogin') {
             console.log('trying tailscale login')
             result = await executeCommand(`tailscale up --auth-key=${clientSecret} --advertise-tags=tag:voicechat`)
@@ -132,7 +138,9 @@ const collectTsMembers = async () => {
 
                             if (tsStatus.Peer) {
                                 for (let peer of Object.values(tsStatus.Peer)) {
-                                    peersIp.push(peer.TailscaleIPs[0])
+                                    if (peer.Online) {
+                                        peersIp.push(peer.TailscaleIPs[0])
+                                    }
                                 }
                                 return ({ localIp, peersIp })
                             } else {
@@ -159,7 +167,7 @@ const collectTsMembers = async () => {
             }
         } if (tsStatus.BackendState === 'Stopped') {
             result = await executeCommand(`tailscale up`)
-            await delay(200)
+            await delay(3000)
             collectTsMembers()
         }
     }
@@ -191,8 +199,16 @@ app.whenReady().then(async () => {
         const check = await checkTsAvailable()
         if (check.tailscaleAvailable) {
             const { localIp: ts_localIp, peersIp: ts_peersIp } = await collectTsMembers()
-            globalData.ts_localIp = ts_localIp
-            globalData.ts_peersIp = ts_peersIp
+            if (ts_localIp && ts_peersIp) {
+                globalData.ts_localIp = ts_localIp
+                globalData.ts_peersIp = ts_peersIp
+                if (!isServerRunning) {
+                    server.listen(8848, '0.0.0.0', () => {
+                        console.log('(server online)')
+                        isServerRunning = true
+                    })
+                }
+            }
         } else {
             globalData.ts_localIp = 'tailscale not available'
             globalData.ts_peersIp = 'tailscale not available'
