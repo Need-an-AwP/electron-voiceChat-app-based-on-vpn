@@ -581,7 +581,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
         pcs_div.innerHTML = generateConnectionInfoHTML()
     }, 1000);
-
+    /*
     const appAudioInputButton = document.getElementById('appAudioInputButton')
     appAudioInputButton.addEventListener('click', () => {
         ipcRenderer.send('ask_displaySources_window')
@@ -686,5 +686,99 @@ window.addEventListener('DOMContentLoaded', () => {
                 displayPreview.srcObject = stream
             })
         })
+    })*/
+
+    const shareAudioButton = document.getElementById('share_audio')
+    const shareAudioInput = document.getElementById('share_audio_input')
+    const shareAudioDiv = document.getElementById('share_audio_div')
+    shareAudioButton.addEventListener('click', () => {
+        let link = shareAudioInput.value
+        if (link === '') { link = 'https://www.youtube.com/watch?v=9hpIW8sl6JE&list=RDQWG8qryIENA&index=10' }
+        ipcRenderer.send('shareAudio', link)
+        //const webview = document.createElement('webview')
+
     })
+
+    const fileReader = new FileReader();
+    function handleShareBlob(blob) {
+        if (!sourceBuffer) return;
+        if (sourceBuffer && sourceBuffer.updating) {
+            //sourceBuffer.abort();
+        }
+        fileReader.onload = () => {
+            const arrayBuffer = fileReader.result;
+            sourceBuffer.appendBuffer(arrayBuffer);
+        };
+        fileReader.readAsArrayBuffer(blob);
+    }
+
+    let port
+    let shareMediaSource
+    let sourceBuffer
+    ipcRenderer.on('port', e => {
+        [port] = e.ports
+        port.onmessage = (event) => {
+            const blob = event.data
+            //console.log('received result:', blob)
+
+            if (!shareMediaSource) {
+                shareMediaSource = new MediaSource()
+                shareMediaSource.addEventListener('sourceopen', () => {
+                    sourceBuffer = shareMediaSource.addSourceBuffer(blob.type)
+                })
+                const shareAudio = document.createElement('audio')
+                shareAudio.controls = true
+                shareAudio.autoplay = true
+                shareAudio.src = URL.createObjectURL(shareMediaSource)
+                shareAudioDiv.appendChild(shareAudio)
+
+                const shareAudioSource = ctx_main.createMediaElementSource(shareAudio)
+                const gainNode_share = ctx_main.createGain()
+                shareAudioSource.connect(gainNode_share)
+                gainNode_share.gain.value = 0.5
+                gainNode_share.connect(gainNode1)
+            }
+            handleShareBlob(blob)
+        }
+        console.log(port)
+    })
+    ////////
+    /*
+    let mediaRecorders = {}
+    let streamList = []
+
+    const videoList = document.querySelectorAll('video')
+    const audioList = document.querySelectorAll('audio')
+    for (let element of videoList) {
+        const captureStream = element.captureStream()
+        streamList.push(captureStream)
+    }
+    for (let element of audioList) {
+        const captureStream = element.captureStream()
+        streamList.push(captureStream)
+    }
+
+    for (let stream of streamList) {
+        const mediaRecorder = new MediaRecorder(stream)
+        mediaRecorder.ondataavailable = (event) => {
+            console.log(event.data)
+            console.log(event)
+            if (event.data.size > 0) {
+                //port.postMessage(event.data)
+            }
+        }
+        
+        mediaRecorders[stream.id] = mediaRecorder
+    }
+    setInterval(() => {
+        for( let key of Object.keys(mediaRecorders)){
+            const recorder = mediaRecorders[key]
+            if (recorder.state === 'inactive') {
+                recorder.start()
+            }
+            recorder.requestData()
+        }
+    }, 200);
+    */
+    ////////
 })

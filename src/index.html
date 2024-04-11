@@ -18,6 +18,7 @@
     <link rel="stylesheet" type="text/css" href="htmlComponent/Buttonbyzjssun.css">
     <link rel="stylesheet" type="text/css" href="htmlComponent/Buttonbyzjssun_red.css">
     <link rel="stylesheet" type="text/css" href="htmlComponent/noiseReduceSwitch.css">
+    <link rel="stylesheet" type="text/css" href="htmlComponent/inputbyJaareet.css">
 </head>
 
 <body style="background-color: rgb(36, 36, 36); color: #fff;width: 100vw; height: 100vh;margin: 0;display: flex;flex-direction: row;">
@@ -51,7 +52,7 @@
                 </label>
             </div>
 
-            <audio class="localpcsOutputAudio" id="localStream" controls></audio>
+            <audio class="localpcsOutputAudio" id="localStream" controls ></audio>
             <canvas id="visualizeCanvas"></canvas>
         </div>
         <!--
@@ -66,7 +67,18 @@
             </div>
         </div>    
         -->
-        
+        <div
+        id="share_audio_div"
+        style="margin: 10px;">
+            <input 
+            type="text" 
+            id="share_audio_input" 
+            class="Jaareetinput" 
+            placeholder="ENTER A LINK"
+                style="width: 30vw;height: 30px;"
+            >
+            <button id="share_audio" class="zjssun-btn">share audio</button>
+        </div>
     </div>
     <div style="width: 40vw; height: 100vh;">
         <div >room members:

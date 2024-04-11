@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, desktopCapturer, net } = require('electron');
+const { app, BrowserWindow, ipcMain, desktopCapturer, net, BrowserView, MessageChannelMain } = require('electron');
 const path = require('path');
 const { exec } = require('child_process')
 const { Server } = require('socket.io')
@@ -14,6 +14,8 @@ let globalData = {
     ts_localIp: null,
     ts_peersIp: null
 }
+let shareWindow = null;
+let win = null;
 
 //------------server
 let room_members = new Set()
@@ -178,7 +180,6 @@ const collectTsMembers = async () => {
 }
 
 
-let win = null;
 app.whenReady().then(async () => {
     win = new BrowserWindow({
         width: 800,
@@ -189,11 +190,17 @@ app.whenReady().then(async () => {
             contextIsolation: false,
             nodeIntegration: true,
             webSecurity: true,
+            //webviewTag: true
         }
     })
 
     win.loadFile('src/index.html')
     win.webContents.openDevTools({ mode: 'detach' })
+    win.on('close', ()=> {
+        BrowserWindow.getAllWindows().forEach(window => {
+            window.close()
+        })
+    })
 
     setInterval(async () => {
         const check = await checkTsAvailable()
@@ -246,3 +253,32 @@ ipcMain.on('ask_displaySources_window', () => {
         })
         .catch(error => console.log(error))
 })
+
+ipcMain.on('shareAudio', (e, d) => {
+    shareWindow = new BrowserWindow({
+        width: 1920 / 2,
+        height: 1080 / 2,
+        autoHideMenuBar: true,
+        webPreferences: {
+            preload: path.join(__dirname, 'shareAudio_preload.js'),
+            nodeIntegration: true,
+            contextIsolation: false
+        }
+    })
+    shareWindow.loadURL(d)
+    shareWindow.webContents.openDevTools({ mode: 'detach' })
+
+})
+
+ipcMain.on('request_port', () => {
+    const { port1, port2 } = new MessageChannelMain()
+    if (win && shareWindow) {
+        win.webContents.postMessage('port', null, [port1])
+        shareWindow.webContents.postMessage('port', null, [port2])
+    }
+})
+
+ipcMain.on('streamList', (e, d) => {
+    console.log(d)
+})
+
