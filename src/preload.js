@@ -248,7 +248,7 @@ window.addEventListener('DOMContentLoaded', () => {
             const peersContent = 'tailscale not available'
             ts_state.innerHTML = `Tailscale local IP: ${d.ts_localIp}<br>Tailnet peers: ${peersContent}<br>`
         } else {
-            const peersContent = ts_peersIp.length > 0 ? (ts_peersIp.length > 1 ? ts_peersIp.join(', ') : ts_peersIp[0]) : 'no one else online'
+            const peersContent = ts_peersIp.length > 0 ? (ts_peersIp.length > 1 ? '<br>'+ts_peersIp.join('<br>') : ts_peersIp[0]) : 'no one else online'
             ts_state.innerHTML = `Tailscale local IP: ${d.ts_localIp}<br>Tailnet peers: ${peersContent}<br>`
         }
         ts_localIp = d.ts_localIp
@@ -267,6 +267,8 @@ window.addEventListener('DOMContentLoaded', () => {
                     socketConnection.on('connect', () => {
                         console.log(`local socket id: ${socketConnection.id}`)
                         const signaling_div = document.getElementById('signaling_div')
+                        const loader_div = document.getElementById('signaling_loader')
+                        loader_div.className = ''
                         const info = document.createElement('span')
                         info.id = ip
                         signaling_div.appendChild(info)

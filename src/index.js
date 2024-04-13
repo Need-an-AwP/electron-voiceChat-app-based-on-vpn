@@ -184,6 +184,8 @@ app.whenReady().then(async () => {
     win = new BrowserWindow({
         width: 800,
         height: 900,
+        minWidth: 800,
+        minHeight: 900,
         autoHideMenuBar: true,
         webPreferences: {
             preload: path.join(__dirname, 'preload.js'),

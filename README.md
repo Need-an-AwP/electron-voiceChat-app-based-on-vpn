@@ -6,11 +6,12 @@
 目前仅使用tailscale网络连接客户端，计划添加获取指定进程音频以及屏幕共享功能
 ~~（tailscale目前的网络状况较差）~~
 ~~计划同时使用zerotier和tailscale网络~~
-一些来自tailscale cli的错误还没有进行处理
+一些来自tailscale cli的错误还没有进行处理:tailscale方面的支持缺失
 采用分布式信令服务
 
 ### 用户界面
 前端页面由纯js构建
+几乎全部组件都来自[uiverse](https://uiverse.io/)
 （用户界面依然非常原始）
 
 ### 语音降噪
